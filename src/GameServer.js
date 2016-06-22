@@ -1050,7 +1050,7 @@ GameServer.prototype.splitCells = function(client) {
     }
 };
 
-GameServer.prototype.splitPlayerCell = function(client, parent, angle, mass) {
+GameServer.prototype.splitPlayerCell = function(client, parent, angle, mass, boostSpeed) {
     // Returns boolean whether a cell has been split or not. You can use this in the future.
 
     if (client.cells.length >= this.config.playerMaxCells) {
@@ -1074,7 +1074,11 @@ GameServer.prototype.splitPlayerCell = function(client, parent, angle, mass) {
     
     // Create cell
     var newCell = new Entity.PlayerCell(this.getNextNodeId(), client, pos, mass, this);
-    newCell.setBoost(780, angle);
+    if (boostSpeed == null) newCell.setBoost(780, angle);
+    else {
+        newCell.setBoost(boostSpeed,angle);
+        newCell.notSplitByVirus = false;
+    }
     
     // Add to node list
     this.addNode(newCell);
@@ -1090,7 +1094,7 @@ GameServer.prototype.canEjectMass = function(client) {
     }
 };
 
-GameServer.prototype.ejectMass = function(client) {
+GameServer.prototype.ejectMass = function(client, isFoolsVirus) {
     if (!this.canEjectMass(client))
         return;
     for (var i = 0; i < client.cells.length; i++) {
@@ -1103,6 +1107,8 @@ GameServer.prototype.ejectMass = function(client) {
         if (cell.getMass() < this.config.playerMinMassEject) {
             continue;
         }
+
+        if (isFoolsVirus && cell.getMass() < 280) continue;
 
         var dx = client.mouse.x - cell.position.x;
         var dy = client.mouse.y - cell.position.y;
@@ -1117,7 +1123,8 @@ GameServer.prototype.ejectMass = function(client) {
         }
         
         // Remove mass from parent cell first
-        cell.setMass(cell.getMass() - this.config.ejectMassLoss);
+        if (isFoolsVirus) cell.setMass(cell.getMass() - 140);
+        else cell.setMass(cell.getMass() - this.config.ejectMassLoss);
 
         // Get starting position
         var pos = {
@@ -1132,10 +1139,16 @@ GameServer.prototype.ejectMass = function(client) {
         angle += (Math.random() * 0.6) - 0.3;
 
         // Create cell
-        var ejected = new Entity.EjectedMass(this.getNextNodeId(), null, pos, this.config.ejectMass, this);
+        var ejected = new Entity.EjectedMass(this.getNextNodeId(), null, pos, (isFoolsVirus ? 100 : this.config.ejectMass), this);
         ejected.ejector = cell;
-        ejected.setColor(cell.getColor());
-        ejected.setBoost(780, angle);
+        if (isFoolsVirus) {
+            ejected.setColor({r:0,g:255,b:0});
+            ejected.setBoost(1200, angle);
+        }
+        else {
+            ejected.setColor(cell.getColor());
+            ejected.setBoost(780, angle);
+        }
 
         this.addNode(ejected);
     }
@@ -1148,7 +1161,7 @@ GameServer.prototype.shootVirus = function(parent, angle) {
     };
 
     var newVirus = new Entity.Virus(this.getNextNodeId(), null, parentPos, this.config.virusStartMass, this);
-    newVirus.setBoost(780, angle);
+    newVirus.setBoost(1500, angle);//780
 
     // Add to moving cells list
     this.addNode(newVirus);

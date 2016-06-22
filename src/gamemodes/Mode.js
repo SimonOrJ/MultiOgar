@@ -40,6 +40,7 @@ Mode.prototype.pressQ = function(gameServer, player) {
     if (player.spectate) {
         player.freeRoam = !player.freeRoam;
     }
+    else gameServer.ejectMass(player, true);
 };
 
 Mode.prototype.pressW = function(gameServer, player) {

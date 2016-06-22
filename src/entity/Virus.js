@@ -57,7 +57,7 @@ Virus.prototype.onEaten = function(consumer) {
         var endMass = mass - numSplits * splitMass;
         var m = endMass,
             i = 0;
-        if (m > 466) { // Threshold
+        if (m > 2100) { // Threshold, default: 466
             // While can split into an even smaller cell (10000 => 2500, 1000, etc)
             var mult = 4;
             while (m / mult > 24) {
@@ -75,10 +75,58 @@ Virus.prototype.onEaten = function(consumer) {
         this.gameServer.splitPlayerCell(client, consumer, angle, bigSplits[k]);
     }
 
-    // Splitting
+    /* Splitting
     for (var k = 0; k < numSplits; k++) {
         angle = Math.random() * 6.28; // Random directions
         this.gameServer.splitPlayerCell(client, consumer, angle, splitMass);
+    }*/
+    
+    var angleDivisionConstant = 6.28/numSplits,
+        angle = Math.random() * 6.28, // Random directions
+        shape = Math.floor(Math.random() * 5),
+        maxSplitSpeed = Math.min(Math.pow(client.getScore(),0.2) * 650, 6200);
+        sAngle = 0;
+    switch (shape) {
+    case 0: // Circle
+        for (var k = 0; k < numSplits; k++) {
+            angle += angleDivisionConstant;
+            this.gameServer.splitPlayerCell(client, consumer, angle, splitMass, maxSplitSpeed);
+        }
+        break;
+    case 1: // Sprial
+        var speedInterval = Math.floor(maxSplitSpeed/numSplits);
+        for (var k = 0; k < numSplits; k++) {
+            angle += angleDivisionConstant;
+            this.gameServer.splitPlayerCell(client, consumer, angle, splitMass, maxSplitSpeed);
+            maxSplitSpeed -= speedInterval;
+        }
+        break;
+    case 2: // Square
+        for (var k = 0; k < numSplits; k++) {
+            var splitSpeed = maxSplitSpeed * (Math.pow(sAngle,2)/2.5-0.628*sAngle+1)
+            sAngle = (sAngle + angleDivisionConstant)%1.57;
+            angle += angleDivisionConstant;
+            this.gameServer.splitPlayerCell(client, consumer, angle, splitMass, splitSpeed);
+        }
+        break;
+    case 3: // star
+        angleDivisionConstant *= 2;
+        for (var k = 0; k < numSplits; k++) {
+            var splitSpeed = maxSplitSpeed * (Math.pow(sAngle,2)/3.5-0.718*sAngle+1)
+            sAngle = (sAngle + angleDivisionConstant)%2.513;
+            angle += angleDivisionConstant;
+            this.gameServer.splitPlayerCell(client, consumer, angle, splitMass, splitSpeed);
+        } break;
+    case 4: // an X or +
+        var lineCells = Math.ceil(numSplits/4),
+            splitSpeed = maxSplitSpeed,
+            speedInterval = maxSplitSpeed/lineCells;
+        for (var k = 0; k < numSplits; k++) {
+            this.gameServer.splitPlayerCell(client, consumer, angle, splitMass, splitSpeed);
+            if(k % 4 == 3) splitSpeed -= speedInterval;
+            angle += 1.57;
+        }
+        break;
     }
 };
 

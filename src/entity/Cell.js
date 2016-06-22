@@ -25,6 +25,8 @@ function Cell(nodeId, owner, position, mass, gameServer) {
         this.setMass(mass);
     if (position != null)
         this.setPosition(position);
+
+    this.notSplitByVirus = true;
 }
 
 module.exports = Cell;
@@ -145,7 +147,7 @@ Cell.prototype.move = function (border) {
         return;
     }
     var speed = Math.sqrt(this.boostDistance * this.boostDistance / 100);
-    var speed = Math.min(speed, 78);                // limit max speed with sqrt(780*780/100)
+    if (this.notSplitByVirus) var speed = Math.min(speed, 78);                // limit max speed with sqrt(780*780/100)
     speed = Math.min(speed, this.boostDistance);    // avoid overlap 0
     this.boostDistance -= speed;
     if (this.boostDistance < 1) this.boostDistance = 0;

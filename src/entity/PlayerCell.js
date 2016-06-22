@@ -22,21 +22,9 @@ PlayerCell.prototype.getSkin = function () {
 
 PlayerCell.prototype.updateRemerge = function () {
     var age = this.getAge(this.gameServer.getTick());
-    if (age < 15) {
-        // do not remerge if cell age is smaller than 15 ticks
-        this._canRemerge = false;
-        return;
-    }
-    var baseTtr = this.gameServer.config.playerRecombineTime;        // default baseTtr = 30
-    if (baseTtr == 0) {
-        // instant merge
+    // 20: full cell split; 13: cell split delay.
+    if (age > 20 || (age > 13 && this.getMass() < 1000))
         this._canRemerge = true;
-        return;
-    }
-    var ttr = Math.max(baseTtr, (this.getSize() * 0.2) >> 0);   // ttr in seconds
-    // seconds to ticks (tickStep = 0.040 sec => 1 / 0.040 = 25)
-    ttr *= 25;
-    this._canRemerge = age >= ttr;
 }
 
 PlayerCell.prototype.canRemerge = function () {
