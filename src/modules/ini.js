@@ -75,10 +75,15 @@ function decode(str) {
         section = null;
 
     lines.forEach(function(line, _, __) {
+        var testLine = line.trim();
+
+        // skip empty lines or commented lines
         if (!line || line.match(/^\s*[;#]/)) {
+            // skip commented lines
             return;
         }
-
+        // E.g. serverTimeout = 30
+        // Returns ["serverTimeout = 30", undefined, "serverTimeout ", "= 30", "30"]
         var match = line.match(re);
 
         if (!match) {
@@ -103,6 +108,21 @@ function decode(str) {
                 p[key] = [p[key]];
             }
         }
+
+        //// Mass to Size function catcher
+        if (startsWith(value, "massToSize(") && endsWith(value, ")")) {
+            // 11: length of "massToSize("
+            var strValue = value.slice(11, value.length - 1).trim();
+            value = Math.sqrt(parseFloat(strValue) * 100) + 0.5;
+        }
+        function startsWith(value, pattern) {
+            return value.length >= pattern.length && 
+                value.indexOf(pattern) === 0;
+        };
+        function endsWith(value, pattern) {
+            return value.length >= pattern.length && 
+                value.lastIndexOf(pattern) === value.length - pattern.length;
+        };
 
         // safeguard against resetting a previously defined
         // array by accidentally forgetting the brackets
@@ -160,7 +180,9 @@ function unsafe(val, doUnesc) {
         }
         try {
             val = JSON.parse(val);
-        } catch (_) {}
+        } catch (err) {
+            Logger.error(err.stack);
+        }
     } else {
         // walk the val to find the first not-escaped ; character
         var esc = false;

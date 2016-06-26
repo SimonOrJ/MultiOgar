@@ -1,4 +1,5 @@
 var Cell = require('./Cell');
+var Logger = require('../modules/Logger');
 
 function Virus() {
     Cell.apply(this, Array.prototype.slice.call(arguments));
@@ -24,8 +25,8 @@ Virus.prototype.onEat = function (prey) {
     var size1 = this.getSize();
     var size2 = prey.getSize() + 1;
     this.setSize(Math.sqrt(size1 * size1 + size2 * size2));
-    if (this.getMass() >= this.gameServer.config.virusMaxMass) {
-        this.setMass(this.gameServer.config.virusStartMass); // Reset mass
+    if (this.getSize() >= this.gameServer.config.virusMaxSize) {
+        this.setSize(this.gameServer.config.virusMinSize); // Reset mass
         this.gameServer.shootVirus(this, prey.getAngle());
     }
 };
@@ -71,13 +72,13 @@ Virus.prototype.onEaten = function(consumer) {
     numSplits -= bigSplits.length;
 
     for (var k = 0; k < bigSplits.length; k++) {
-        angle = Math.random() * 6.28; // Random directions
+        angle = Math.random() * 2 * Math.PI; // Random directions
         this.gameServer.splitPlayerCell(client, consumer, angle, bigSplits[k]);
     }
 
     /* Splitting
     for (var k = 0; k < numSplits; k++) {
-        angle = Math.random() * 6.28; // Random directions
+        angle = Math.random() * 2 * Math.PI; // Random directions
         this.gameServer.splitPlayerCell(client, consumer, angle, splitMass);
     }*/
     
@@ -139,6 +140,6 @@ Virus.prototype.onRemove = function(gameServer) {
     if (index != -1) {
         gameServer.nodesVirus.splice(index, 1);
     } else {
-        console.log("[Warning] Tried to remove a non existing virus!");
+        Logger.error("Virus.onRemove: Tried to remove a non existing virus!");
     }
 };

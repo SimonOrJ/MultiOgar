@@ -14,7 +14,7 @@ var PacketHandler = require('./PacketHandler');
 var Entity = require('./entity');
 var Gamemode = require('./gamemodes');
 var BotLoader = require('./ai/BotLoader');
-var Logger = require('./modules/log');
+var Logger = require('./modules/Logger');
 
 // GameServer implementation
 function GameServer() {
@@ -25,7 +25,7 @@ function GameServer() {
     this.clients = [];
     this.largestClient; // Required for spectators
     this.nodes = [];
-    this.nodesVirus = []; // Virus nodes
+    this.nodesVirus = [];   // Virus nodes
     this.nodesEjected = []; // Ejected mass nodes
     this.quadTree = null;
 
@@ -35,7 +35,6 @@ function GameServer() {
     this.leaderboardType = -1; // no type
 
     this.bots = new BotLoader(this);
-    this.log = new Logger();
     this.commands; // Command handler
 
     // Main loop tick
@@ -54,17 +53,17 @@ function GameServer() {
     // Config
     this.config = {
         serverTimeout: 30,          // Seconds to keep connection alive for non-responding client
-        serverMaxConnections: 64,   // Maximum amount of connections to the server. (0 for no limit)
-        serverIpLimit: 4,           // Maximum amount of connections from the same IP (0 for no limit)
+        serverMaxConnections: 64,   // Maximum number of connections to the server. (0 for no limit)
+        serverIpLimit: 4,           // Maximum number of connections from the same IP (0 for no limit)
         serverPort: 443,            // Server port
         serverTracker: 0,           // Set to 1 if you want to show your server on the tracker http://ogar.mivabe.nl/master
         serverGamemode: 0,          // Gamemode, 0 = FFA, 1 = Teams
-        serverBots: 0,              // Amount of player bots to spawn
+        serverBots: 0,              // Number of player bots to spawn
         serverViewBaseX: 1920,      // Base client screen resolution. Used to calculate view area. Warning: high values may cause lag
         serverViewBaseY: 1080,      // min value is 1920x1080
         serverSpectatorScale: 0.4,  // Scale (field of view) used for free roam spectators (low value leads to lags, vanilla=0.4, old vanilla=0.25)
         serverStatsPort: 88,        // Port for stats server. Having a negative number will disable the stats server.
-        serverStatsUpdate: 60,      // Amount of seconds per update for the server stats
+        serverStatsUpdate: 60,      // Update interval of server stats in seconds
         serverLogLevel: 1,          // Logging level of the server. 0 = No logs, 1 = Logs the console, 2 = Logs console and ip connections
         serverScrambleCoords: 1,    // Toggles scrambling of coordinates. 0 = No scrambling, 1 = lightweight scrambling. 2 = full scrambling (also known as scramble minimap, a little slow, some clients may not support it)
         serverMaxLB: 10,            // Controls the maximum players displayed on the leaderboard.
@@ -72,38 +71,41 @@ function GameServer() {
         serverName: 'MultiOgar #1', // Server name
         serverWelcome1: 'Welcome to MultiOgar server!',      // First server welcome message
         serverWelcome2: '',         // Second server welcome message (for info, etc)
+        
         borderWidth: 14142,         // Map border size (Vanilla value: 14142)
         borderHeight: 14142,        // Map border size (Vanilla value: 14142)
-        spawnInterval: 20,          // The interval between each food cell spawn in ticks (1 tick = 50 ms)
-        foodSpawnAmount: 10,        // The amount of food to spawn per interval
-        foodStartAmount: 100,       // The starting amount of food in the map
-        foodMaxAmount: 500,         // Maximum food cells on the map
-        foodMinMass: 1,             // Minimum food mass
-        foodMaxMass: 4,             // Maximum food mass
+        
+        foodMinSize: 10,            // Minimum food size (vanilla 10)
+        foodMaxSize: 20,            // Maximum food size (vanilla 20)
+        foodMinAmount: 1000,         // Minimum food cells on the map
+        foodMaxAmount: 2000,        // Maximum food cells on the map
+        foodSpawnAmount: 10,        // The number of food to spawn per interval
         foodMassGrow: 1,            // Enable food mass grow ?
-        virusMinAmount: 10,         // Minimum amount of viruses on the map.
-        virusMaxAmount: 50,         // Maximum amount of viruses on the map. If this amount is reached, then ejected cells will pass through viruses.
-        virusStartMass: 100,        // Starting virus mass
-        virusMaxMass: 200,          // Maximum virus mass
-        ejectMass: 13.69,           // Mass of ejected cells
-        ejectMassCooldown: 3,       // min ticks between ejects
-        ejectMassLoss: 15,          // Mass lost when ejecting cells
+        spawnInterval: 20,          // The interval between each food cell spawn in ticks (1 tick = 50 ms)
+        
+        virusMinSize: 100,          // Minimum virus size (vanilla 100)
+        virusMaxSize: 140,          // Maximum virus size (vanilla 140)
+        virusMinAmount: 10,         // Minimum number of viruses on the map.
+        virusMaxAmount: 50,         // Maximum number of viruses on the map. If this number is reached, then ejected cells will pass through viruses.
+        
+        ejectSize: 37,              // Size of ejected cells (vanilla 37)
+        ejectCooldown: 3,           // min ticks between ejects
         ejectSpawnPlayer: 50,       // Chance for a player to spawn from ejected mass
-        playerStartMass: 10.24,     // Starting mass of the player cell.
-        playerBotGrowEnabled: 1,    // If 0, eating a cell with less than 17 mass while cell has over 625 wont gain any mass
-        playerMaxMass: 22500,       // Maximum mass a player can have
-        playerMinMassEject: 32,     // Mass required to eject a cell
-        playerMinMassSplit: 36,     // Mass required to split
+        
+        playerMinSize: 32,          // Minimym size of the player cell (mass = 32*32/100 = 10.24)
+        playerMaxSize: 1500,        // Maximum size of the player cell (mass = 1500*1500/100 = 22500)
+        playerMinSplitSize: 60,     // Minimum player cell size allowed to split (mass = 60*60/100 = 36) 
+        playerStartSize: 64,        // Start size of the player cell (mass = 64*64/100 = 41)
         playerMaxCells: 16,         // Max cells the player is allowed to have
-        playerRecombineTime: 30,    // Base amount of seconds before a cell is allowed to recombine
-        playerMassDecayRate: .002,  // Amount of mass lost per second
-        playerMinMassDecay: 10.24,  // Minimum mass for decay to occur
-        playerMaxNickLength: 15,    // Maximum nick length
         playerSpeed: 1,             // Player speed multiplier
-        playerDisconnectTime: 60,   // The amount of seconds it takes for a player cell to be removed after disconnection (If set to -1, cells are never removed)
-        tourneyMaxPlayers: 12,      // Maximum amount of participants for tournament style game modes
-        tourneyPrepTime: 10,        // Amount of ticks to wait after all players are ready (1 tick = 1000 ms)
-        tourneyEndTime: 30,         // Amount of ticks to wait after a player wins (1 tick = 1000 ms)
+        playerDecayRate: .002,      // Amount of player cell size lost per second
+        playerRecombineTime: 30,    // Base time in seconds before a cell is allowed to recombine
+        playerMaxNickLength: 15,    // Maximum nick length
+        playerDisconnectTime: 60,   // The time in seconds it takes for a player cell to be removed after disconnection (If set to -1, cells are never removed)
+        
+        tourneyMaxPlayers: 12,      // Maximum number of participants for tournament style game modes
+        tourneyPrepTime: 10,        // Number of ticks to wait after all players are ready (1 tick = 1000 ms)
+        tourneyEndTime: 30,         // Number of ticks to wait after a player wins (1 tick = 1000 ms)
         tourneyTimeLimit: 20,       // Time limit of the game, in minutes.
         tourneyAutoFill: 0,         // If set to a value higher than 0, the tournament match will automatically fill up with bots after this amount of seconds
         tourneyAutoFillPlayers: 1,  // The timer for filling the server with bots will not count down unless there is this amount of real players
@@ -128,9 +130,6 @@ GameServer.prototype.start = function() {
     this.timerLoopBind = this.timerLoop.bind(this);
     this.mainLoopBind = this.mainLoop.bind(this);
     
-    // Logging
-    this.log.setup(this);
-    
     // Gamemode configurations
     this.gameMode.onServerInit(this);
     
@@ -150,13 +149,13 @@ GameServer.prototype.start = function() {
 GameServer.prototype.onServerSocketError = function (error) {
     switch (error.code) {
         case "EADDRINUSE":
-            console.log("[Error] Server could not bind to port " + this.config.serverPort + "! Please close out of Skype or change 'serverPort' in gameserver.ini to a different number.");
+            Logger.error("Server could not bind to port " + this.config.serverPort + "! Please close out of Skype or change 'serverPort' in gameserver.ini to a different number.");
             break;
         case "EACCES":
-            console.log("[Error] Please make sure you are running Ogar with root privileges.");
+            Logger.error("Please make sure you are running Ogar with root privileges.");
             break;
         default:
-            console.log("[Error] Unhandled error code: " + error.code);
+            Logger.error(error.code + ": " + error.message);
             break;
     }
     process.exit(1); // Exits the program
@@ -170,15 +169,15 @@ GameServer.prototype.onServerSocketOpen = function () {
     setTimeout(this.timerLoopBind, 1);
     
     // Done
-    console.log("[Game] Listening on port " + this.config.serverPort);
-    console.log("[Game] Current game mode is " + this.gameMode.name);
+    Logger.info("Listening on port " + this.config.serverPort);
+    Logger.info("Current game mode is " + this.gameMode.name);
     
     // Player bots (Experimental)
     if (this.config.serverBots > 0) {
         for (var i = 0; i < this.config.serverBots; i++) {
             this.bots.addBot();
         }
-        console.log("[Game] Loaded " + this.config.serverBots + " player bots");
+        Logger.info("Added " + this.config.serverBots + " player bots");
     }
 };
 
@@ -213,7 +212,7 @@ GameServer.prototype.onClientSocketOpen = function (ws) {
     ws.remoteAddress = ws._socket.remoteAddress;
     ws.remotePort = ws._socket.remotePort;
     ws.lastAliveTime = +new Date;
-    this.log.onConnect(ws.remoteAddress); // Log connections
+    Logger.write("CONNECTED " + ws.remoteAddress + ":" + ws.remotePort + ", origin: \"" + ws.upgradeReq.headers.origin + "\"");
     
     ws.playerTracker = new PlayerTracker(this, ws);
     ws.packetHandler = new PacketHandler(this, ws);
@@ -236,12 +235,11 @@ GameServer.prototype.onClientSocketOpen = function (ws) {
 };
 
 GameServer.prototype.onClientSocketClose = function (ws, code) {
-    this.log.onDisconnect(ws.remoteAddress);
-    
     ws.isConnected = false;
     ws.sendPacket = function (data) { };
     ws.closeReason = { code: ws._closeCode, message: ws._closeMessage };
     ws.closeTime = +new Date;
+    Logger.write("DISCONNECTED " + ws.remoteAddress + ":" + ws.remotePort + ", code: " + ws._closeCode + ", reason: \"" + ws._closeMessage + "\", name: \""+ws.playerTracker.getName()+"\"");
 
     var color = this.getGrayColor(ws.playerTracker.getColor());
     ws.playerTracker.setColor(color);
@@ -307,11 +305,10 @@ GameServer.prototype.getRandomPosition = function() {
     };
 };
 
-GameServer.prototype.getRandomSpawn = function(mass) {
+GameServer.prototype.getRandomSpawn = function(size) {
     // Random and secure spawns for players and viruses
-    var size = Math.sqrt(mass * 100);
     var pos = this.getRandomPosition();
-    var unsafe = this.willCollide(size, pos, mass == this.config.virusStartMass);
+    var unsafe = this.willCollide(pos, size);
     if (!unsafe) return pos;
     
     // just shift offset and try again
@@ -324,17 +321,11 @@ GameServer.prototype.getRandomSpawn = function(mass) {
     while (unsafe && attempt < maxAttempt) {
         pos.x += stepx * dirx;
         pos.y += stepy * diry;
-        unsafe = this.willCollide(size, pos, mass == this.config.virusStartMass);
+        unsafe = this.willCollide(pos, size);
         attempt++;
     }
-    
-    // If it reached attempt maxAttempt, warn the user
-    //if (unsafe) {
-    //    console.log("[Server] Entity was force spawned near viruses/playercells after "+attempt+" attempts.");
-    //    console.log("[Server] If this message keeps appearing, check your config, especially start masses for players and viruses.");
-    //}
-
-    return pos;
+    // failed to find safe position
+    return null;
 };
 
 GameServer.prototype.getGrayColor = function (rgb) {
@@ -385,6 +376,9 @@ GameServer.prototype.getRandomColor = function() {
 
 GameServer.prototype.updateNodeQuad = function (node) {
     var quadItem = node.quadItem;
+    if (quadItem == null) {
+        throw new TypeError("GameServer.updateNodeQuad: quadItem is null!");
+    }
     // check for change
     if (node.position.x == quadItem.x &&
         node.position.y == quadItem.y &&
@@ -464,8 +458,8 @@ GameServer.prototype.updateSpawn = function() {
     if (this.tickSpawn >= this.config.spawnInterval) {
         this.tickSpawn = 0; // Reset
         
-        this.updateFood(); // Spawn food
-        this.virusCheck(); // Spawn viruses
+        this.updateFood();  // Spawn food
+        this.updateVirus(); // Spawn viruses
     }
 };
 
@@ -525,7 +519,7 @@ GameServer.prototype.onChatMessage = function (from, to, message) {
         return;
     }
     if (message.length > 128) message = message.slice(0, 128);
-    //console.log("[CHAT] " + (from!=null && from.getName().length>0 ? from.getName() : "Spectator") + ": " + message);
+    //Logger.debug("[CHAT] " + (from!=null && from.getName().length>0 ? from.getName() : "Spectator") + ": " + message);
     this.sendChatMessage(from, to, message);
 };
 
@@ -624,31 +618,51 @@ GameServer.prototype.mainLoop = function() {
 
 GameServer.prototype.startingFood = function() {
     // Spawns the starting amount of food cells
-    for (var i = 0; i < this.config.foodStartAmount; i++) {
+    for (var i = 0; i < this.config.foodMinAmount; i++) {
         this.spawnFood();
     }
 };
 
 GameServer.prototype.updateFood = function() {
-    var toSpawn = Math.min(this.config.foodSpawnAmount, (this.config.foodMaxAmount - this.currentFood));
-    for (var i = 0; i < toSpawn; i++) {
+    var maxCount = this.config.foodMaxAmount - this.currentFood;
+    var spawnCount = Math.min(maxCount, this.config.foodSpawnAmount);
+    for (var i = 0; i < spawnCount; i++) {
         this.spawnFood();
     }
 };
 
+GameServer.prototype.updateVirus = function () {
+    var maxCount = this.config.virusMinAmount - this.nodesVirus.length;
+    var spawnCount = Math.min(maxCount, 2);
+    for (var i = 0; i < spawnCount; i++) {
+        this.spawnVirus();
+    }
+};
+
 GameServer.prototype.spawnFood = function() {
-    var cell = new Entity.Food(this.getNextNodeId(), null, this.getRandomPosition(), this.config.foodMinMass, this);
+    var cell = new Entity.Food(this, null, this.getRandomPosition(), this.config.foodMinSize);
     if (this.config.foodMassGrow) {
-        var mass = cell.getMass();
-        var maxGrow = this.config.foodMaxMass - mass;
-        mass += maxGrow * Math.random();
-        cell.setMass(mass);
+        var size = cell.getSize();
+        var maxGrow = this.config.foodMaxSize - size;
+        size += maxGrow * Math.random();
+        cell.setSize(size);
     }
     cell.setColor(this.getRandomColor());
     this.addNode(cell);
 };
 
-GameServer.prototype.spawnPlayer = function(player, pos, mass) {
+GameServer.prototype.spawnVirus = function () {
+    // Spawns a virus
+    var pos = this.getRandomSpawn(this.config.virusMinSize);
+    if (pos == null) {
+        // cannot find safe position => do not spawn
+        return;
+    }
+    var v = new Entity.Virus(this, null, pos, this.config.virusMinSize);
+    this.addNode(v);
+};
+
+GameServer.prototype.spawnPlayer = function(player, pos, size) {
     // Check if there are ejected mass in the world.
     if (this.nodesEjected.length > 0) {
         var index = Math.floor(Math.random() * 100) + 1;
@@ -669,15 +683,19 @@ GameServer.prototype.spawnPlayer = function(player, pos, mass) {
     }
     if (pos == null) {
         // Get random pos
-        pos = this.getRandomSpawn(mass);
+        pos = this.getRandomSpawn(this.config.playerMinSize);
+        if (pos == null) {
+            // cannot find safe position => spawn anyway at random position
+            pos = this.getRandomPosition();
+        }
     }
-    if (mass == null) {
+    if (size == null) {
         // Get starting mass
-        mass = this.config.playerStartMass;
+        size = this.config.playerStartSize;
     }
 
     // Spawn player and add to world
-    var cell = new Entity.PlayerCell(this.getNextNodeId(), player, pos, mass, this);
+    var cell = new Entity.PlayerCell(this, player, pos, size);
     this.addNode(cell);
 
     // Set initial mouse coords
@@ -687,18 +705,7 @@ GameServer.prototype.spawnPlayer = function(player, pos, mass) {
     };
 };
 
-GameServer.prototype.virusCheck = function() {
-    // Checks if there are enough viruses on the map
-    if (this.nodesVirus.length < this.config.virusMinAmount) {
-        // Spawns a virus
-        var pos = this.getRandomSpawn(this.config.virusStartMass);
-        
-        var v = new Entity.Virus(this.getNextNodeId(), null, pos, this.config.virusStartMass, this);
-        this.addNode(v);
-    }
-};
-
-GameServer.prototype.willCollide = function (size, pos, isVirus) {
+GameServer.prototype.willCollide = function (pos, size) {
     // Look if there will be any collision with the current nodes
     var bound = {
         minx: pos.x - size - 10,
@@ -779,10 +786,6 @@ GameServer.prototype.resolveRigidCollision = function (manifold, border) {
     // clip to border bounds
     manifold.cell1.checkBorder(border);
     manifold.cell2.checkBorder(border);
-    // update quadTree
-    // it's too heavy operation we will update it when resolution will be completed
-    //this.updateNodeQuad(manifold.cell1);
-    //this.updateNodeQuad(manifold.cell2);
 };
 
 // Checks if collision is rigid body collision
@@ -818,7 +821,7 @@ GameServer.prototype.resolveCollision = function (manifold) {
     }
     
     // check distance
-    var eatDistance = maxCell.getSize() - minCell.getSize() / Math.PI;
+    var eatDistance = maxCell.getSize() - minCell.getSize() / 3;
     if (manifold.squared >= eatDistance * eatDistance) {
         // too far => can't eat
         return;
@@ -850,7 +853,7 @@ GameServer.prototype.resolveCollision = function (manifold) {
             }
         }
         // Size check
-        if (minCell.getSize() * 1.15 > maxCell.getSize()) {
+        if (maxCell.getSize() <= minCell.getSize() * 1.15) {
             // too large => can't eat
             return;
         }
@@ -882,9 +885,11 @@ GameServer.prototype.resolveCollision = function (manifold) {
 };
 
 GameServer.prototype.updateMoveEngine = function () {
+    var tick = this.getTick();
     // Move player cells
     for (var i in this.clients) {
         var client = this.clients[i].playerTracker;
+        var checkSize = !client.mergeOverride || client.cells.length == 1;
         for (var j = 0; j < client.cells.length; j++) {
             var cell1 = client.cells[j];
             if (cell1.isRemoved)
@@ -892,6 +897,28 @@ GameServer.prototype.updateMoveEngine = function () {
             cell1.updateRemerge(this);
             cell1.moveUser(this.border);
             cell1.move(this.border);
+            
+            // check size limit
+            if (checkSize && cell1.getSize() > this.config.playerMaxSize && cell1.getAge(tick) >= 15) {
+                if (client.cells.length >= this.config.playerMaxCells) {
+                    // cannot split => just limit
+                    cell1.setSize(this.config.playerMaxSize);
+                } else {
+                    // split
+                    var maxSplit = this.config.playerMaxCells - client.cells.length;
+                    var maxMass = this.config.playerMaxSize * this.config.playerMaxSize / 100;
+                    var count = (cell1.getMass() / maxMass) >> 0;
+                    var count = Math.min(count, maxSplit);
+                    var splitSize = cell1.getSize() / Math.sqrt(count + 1);
+                    var splitMass = splitSize * splitSize / 100;
+                    var angle = Math.random() * 2 * Math.PI;
+                    var step = 2 * Math.PI / count;
+                    for (var k = 0; k < count; k++) {
+                        this.splitPlayerCell(client, cell1, angle, splitMass);
+                        angle += step;
+                    }
+                }
+            }
             this.updateNodeQuad(cell1);
         }
     }
@@ -1019,15 +1046,13 @@ GameServer.prototype.updateMoveEngine = function () {
 };
 
 GameServer.prototype.splitCells = function(client) {
-    // sort by size descending
-    client.cells.sort(function (a, b) {
-        return b.getSize() - a.getSize();
-    });
+    // it seems that vanilla uses order by cell age
     var cellToSplit = [];
     for (var i = 0; i < client.cells.length; i++) {
         var cell = client.cells[i];
-        if (cell.getMass() < this.config.playerMinMassSplit)
+        if (cell.getSize() < this.config.playerMinSplitSize) {
             continue;
+        }
         cellToSplit.push(cell);
         if (cellToSplit.length + client.cells.length >= this.config.playerMaxCells)
             break;
@@ -1045,12 +1070,14 @@ GameServer.prototype.splitCells = function(client) {
         var angle = Math.atan2(dx, dy);
         if (isNaN(angle)) angle = Math.PI / 2;
 
-        if (this.splitPlayerCell(client, cell, angle, cell.getMass() / 2) == true)
+        if (this.splitPlayerCell(client, cell, angle, null)) {
             splitCells++;
+        }
     }
 };
 
-GameServer.prototype.splitPlayerCell = function(client, parent, angle, mass, boostSpeed) {
+// TODO: replace mass with size (Virus)
+GameServer.prototype.splitPlayerCell = function (client, parent, angle, mass, boostSpeed) {
     // Returns boolean whether a cell has been split or not. You can use this in the future.
 
     if (client.cells.length >= this.config.playerMaxCells) {
@@ -1058,13 +1085,18 @@ GameServer.prototype.splitPlayerCell = function(client, parent, angle, mass, boo
         return false;
     }
 
-    if (parent.getMass() < this.config.playerMinMassSplit) {
-        // Minimum mass to split
-        return false;
+    var size1 = 0;
+    var size2 = 0;
+    if (mass == null) {
+        size1 = parent.getSplitSize();
+        size2 = size1;
+    } else {
+        size2 = Math.sqrt(mass * 100);
+        size1 = Math.sqrt(parent.getSize() * parent.getSize() - size2 * size2);
     }
     
     // Remove mass from parent cell first
-    parent.setMass(parent.getMass() - mass);
+    parent.setSize(size1);
     
     // make a small shift to the cell position to prevent extrusion in wrong direction
     var pos = {
@@ -1073,12 +1105,12 @@ GameServer.prototype.splitPlayerCell = function(client, parent, angle, mass, boo
     };
     
     // Create cell
-    var newCell = new Entity.PlayerCell(this.getNextNodeId(), client, pos, mass, this);
-    if (boostSpeed == null) newCell.setBoost(780, angle);
-    else {
+    var newCell = new Entity.PlayerCell(this, client, pos, size2);
+    if (boostSpeed) {
         newCell.setBoost(boostSpeed,angle);
         newCell.notSplitByVirus = false;
     }
+    else newCell.setBoost(780, angle);
     
     // Add to node list
     this.addNode(newCell);
@@ -1086,12 +1118,19 @@ GameServer.prototype.splitPlayerCell = function(client, parent, angle, mass, boo
 };
 
 GameServer.prototype.canEjectMass = function(client) {
-    if (client.lastEject == null || this.tickCounter - client.lastEject >= this.config.ejectMassCooldown) {
-        client.lastEject = this.tickCounter;
+    var tick = this.getTick();
+    if (client.lastEject == null) {
+        // first eject
+        client.lastEject = tick;
         return true;
-    } else {
+    }
+    var dt = tick - client.lastEject;
+    if (dt < this.config.ejectCooldown) {
+        // reject (cooldown)
         return false;
     }
+    client.lastEject = tick;
+    return true;
 };
 
 GameServer.prototype.ejectMass = function(client, isFoolsVirus) {
@@ -1104,11 +1143,18 @@ GameServer.prototype.ejectMass = function(client, isFoolsVirus) {
             continue;
         }
 
-        if (cell.getMass() < this.config.playerMinMassEject) {
+        if (cell.getSize() < this.config.playerMinSplitSize) {
             continue;
         }
 
         if (isFoolsVirus && cell.getMass() < 280) continue;
+
+        var size2 = (isFoolsVirus ? 100 : this.config.ejectSize);
+        var sizeSquared = cell.getSquareSize() - size2 * size2;
+        if (sizeSquared < this.config.playerMinSize * this.config.playerMinSize) {
+            continue;
+        }
+        var size1 = Math.sqrt(sizeSquared);
 
         var dx = client.mouse.x - cell.position.x;
         var dy = client.mouse.y - cell.position.y;
@@ -1123,8 +1169,7 @@ GameServer.prototype.ejectMass = function(client, isFoolsVirus) {
         }
         
         // Remove mass from parent cell first
-        if (isFoolsVirus) cell.setMass(cell.getMass() - 140);
-        else cell.setMass(cell.getMass() - this.config.ejectMassLoss);
+        cell.setSize(size1);
 
         // Get starting position
         var pos = {
@@ -1139,7 +1184,7 @@ GameServer.prototype.ejectMass = function(client, isFoolsVirus) {
         angle += (Math.random() * 0.6) - 0.3;
 
         // Create cell
-        var ejected = new Entity.EjectedMass(this.getNextNodeId(), null, pos, (isFoolsVirus ? 100 : this.config.ejectMass), this);
+        var ejected = new Entity.EjectedMass(this, null, pos, size2);
         ejected.ejector = cell;
         if (isFoolsVirus) {
             ejected.setColor({r:0,g:255,b:0});
@@ -1160,8 +1205,8 @@ GameServer.prototype.shootVirus = function(parent, angle) {
         y: parent.position.y,
     };
 
-    var newVirus = new Entity.Virus(this.getNextNodeId(), null, parentPos, this.config.virusStartMass, this);
-    newVirus.setBoost(1500, angle);//780
+    var newVirus = new Entity.Virus(this, null, parentPos, this.config.virusMinSize);
+    newVirus.setBoost(1500, angle);// 780
 
     // Add to moving cells list
     this.addNode(newVirus);
@@ -1178,40 +1223,52 @@ GameServer.prototype.getNearestVirus = function(cell) {
 };
 
 GameServer.prototype.updateMassDecay = function() {
+    var decay = 1 - (this.config.playerDecayRate * this.gameMode.decayMod);
+    if (decay == 0) {
+        return;
+    }
     // Loop through all player cells
-    var massDecay = 1 - (this.config.playerMassDecayRate * this.gameMode.decayMod);
     for (var i = 0; i < this.clients.length; i++) {
         var playerTracker = this.clients[i].playerTracker;
         for (var j = 0; j < playerTracker.cells.length; j++) {
             var cell = playerTracker.cells[j];
-            // Mass decay
-            if (cell.getMass() > this.config.playerMinMassDecay) {
-                var mass = Math.max(cell.getMass() * massDecay, this.config.playerMinMassDecay);
-                cell.setMass(mass);
+            // TODO: check if non linear will be better
+            var size = cell.getSize() * decay;
+            size = Math.max(size, this.config.playerMinSize);
+            if (size != cell.getSize()) {
+                cell.setSize(size);
             }
         }
     }
 };
 
-GameServer.prototype.loadConfig = function() {
-    try {
-        // Load the contents of the config file
-        var load = ini.parse(fs.readFileSync('./gameserver.ini', 'utf-8'));
+var configFileName = './gameserver.ini';
 
-        // Replace all the default config's values with the loaded config's values
-        for (var obj in load) {
-            this.config[obj] = load[obj];
+GameServer.prototype.loadConfig = function () {
+    try {
+        if (!fs.existsSync(configFileName)) {
+            // No config
+            Logger.warn("Config not found... Generating new config");
+            // Create a new config
+            fs.writeFileSync(configFileName, ini.stringify(this.config), 'utf-8');
+        } else {
+            // Load the contents of the config file
+            var load = ini.parse(fs.readFileSync(configFileName, 'utf-8'));
+            // Replace all the default config's values with the loaded config's values
+            for (var key in load) {
+                if (this.config.hasOwnProperty(key)) {
+                    this.config[key] = load[key];
+                } else {
+                    Logger.error("Unknown gameserver.ini value: " + key);
+                }
+            }
         }
     } catch (err) {
-        // No config
-        console.log("[Game] Config not found... Generating new config");
-
-        // Create a new config
-        fs.writeFileSync('./gameserver.ini', ini.stringify(this.config));
+        Logger.error(err.stack);
+        Logger.error("Failed to load " + configFileName + ": " + err.message);
     }
     // check config (min player size = 32 => mass = 10.24)
-    this.config.playerStartMass = Math.max(10.24, this.config.playerStartMass);
-    this.config.playerMinMassDecay = Math.max(10.24, this.config.playerMinMassDecay);
+    this.config.playerMinSize = Math.max(32, this.config.playerMinSize);
 };
 
 GameServer.prototype.loadIpBanList = function () {
@@ -1222,12 +1279,13 @@ GameServer.prototype.loadIpBanList = function () {
             this.ipBanList = fs.readFileSync(fileName, "utf8").split(/[\r\n]+/).filter(function (x) {
                 return x != ''; // filter empty lines
             });
-            console.log("[Game] " + this.ipBanList.length + " IP ban records loaded.");
+            Logger.info(this.ipBanList.length + " IP ban records loaded.");
         } else {
-            console.log("[Game] " + fileName + " is missing.");
+            Logger.warn(fileName + " is missing.");
         }
     } catch (err) {
-        console.log("[Game] Failed to load " + fileName + ": " + err.message);
+        Logger.error(err.stack);
+        Logger.error("Failed to load " + fileName + ": " + err.message);
     }
 };
 
@@ -1240,19 +1298,20 @@ GameServer.prototype.saveIpBanList = function () {
             blFile.write(v + '\n');
         });
         blFile.end();
-        console.log("[Game] " + this.ipBanList.length + " IP ban records saved.");
+        Logger.info(this.ipBanList.length + " IP ban records saved.");
     } catch (err) {
-        console.log("[Game] Failed to save " + fileName + ": " + err.message);
+        Logger.error(err.stack);
+        Logger.error("Failed to save " + fileName + ": " + err.message);
     }
 };
 
 GameServer.prototype.banIp = function (ip) {
     if (this.ipBanList.indexOf(ip) >= 0) {
-        console.log("[Game] " + ip + " is already in the ban list!");
+        Logger.warn(ip + " is already in the ban list!");
         return;
     }
     this.ipBanList.push(ip);
-    console.log("[Game] The IP " + ip + " has been banned");
+    Logger.info("The IP " + ip + " has been banned");
     this.clients.forEach(function (socket) {
         // If already disconnected or the ip does not match
         if (socket == null || !socket.isConnected || socket.remoteAddress != ip)
@@ -1266,7 +1325,7 @@ GameServer.prototype.banIp = function (ip) {
         // disconnect
         socket.close(1000, "Banned from server");
         var name = socket.playerTracker.getFriendlyName();
-        console.log("[Game] Banned: \"" + name + "\" with Player ID " + socket.playerTracker.pID); // Redacted "with IP #.#.#.#" since it'll already be logged above
+        Logger.info("Banned: \"" + name + "\" with Player ID " + socket.playerTracker.pID); // Redacted "with IP #.#.#.#" since it'll already be logged above
         this.sendChatMessage(null, null, "Banned \"" + name + "\""); // notify to don't confuse with server bug
     }, this);
     this.saveIpBanList();
@@ -1275,11 +1334,11 @@ GameServer.prototype.banIp = function (ip) {
 GameServer.prototype.unbanIp = function (ip) {
     var index = this.ipBanList.indexOf(ip);
     if (index < 0) {
-        console.log("[Game] IP " + ip + " is not in the ban list!");
+        Logger.warn("IP " + ip + " is not in the ban list!");
         return;
     }
     this.ipBanList.splice(index, 1);
-    console.log("[Game] Unbanned IP: " + ip);
+    Logger.info("Unbanned IP: " + ip);
     this.saveIpBanList();
 };
 
@@ -1298,16 +1357,16 @@ GameServer.prototype.kickId = function (id) {
         // disconnect
         socket.close(1000, "Kicked from server");
         var name = socket.playerTracker.getFriendlyName();
-        console.log("[Game] Kicked \"" + name + "\"");
+        Logger.info("Kicked \"" + name + "\"");
         this.sendChatMessage(null, null, "Kicked \"" + name + "\""); // notify to don't confuse with server bug
         count++;
     }, this);
     if (count > 0)
         return;
     if (id == 0)
-        console.log("[Game] No players to kick!");
+        Logger.warn("No players to kick!");
     else
-        console.log("[Game] Player with ID "+id+" not found!");
+        Logger.warn("Player with ID "+id+" not found!");
 };
 
 // Stats server
@@ -1333,7 +1392,7 @@ GameServer.prototype.startStatsServer = function(port) {
     // TODO: This causes error if something else already uses this port.  Catch the error.
     this.httpServer.listen(port, function () {
         // Stats server
-        console.log("[Game] Loaded stats server on port " + port);
+        Logger.info("Started stats server on port " + port);
         setInterval(getStatsBind, this.config.serverStatsUpdate * 1000);
     }.bind(this));
 };
@@ -1430,11 +1489,11 @@ GameServer.prototype.pingServerTracker = function () {
     };
     var req = http.request(options, function (res) {
         if (res.statusCode != 200) {
-            console.log("\u001B[1m\u001B[31m[Tracker Error] " + res.statusCode + "\u001B[0m");
+            Logger.error("Tracker Error: " + res.statusCode);
         }
     });
     req.on('error', function (e) {
-        console.log("\u001B[1m\u001B[31m[Tracker Error] " + e.message + "\u001B[0m");
+        Logger.error("Tracker Error: " + e.message);
     });
     req.write(data);
     req.end()

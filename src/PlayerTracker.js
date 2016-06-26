@@ -95,7 +95,23 @@ PlayerTracker.prototype.getFriendlyName = function () {
 };
 
 PlayerTracker.prototype.setName = function(name) {
-    this.name = name;
+    var n = name.toLowerCase();
+    if (n.indexOf("team") >= 0 && n.indexOf("no") < 0 && n.indexOf("n't") < 0 && n.indexOf("stop") < 0 && n.indexOf("hate") < 0) {
+        this.name = "I HATE TEAMING";
+        return;
+    }
+    var na = name;
+    if (n.indexOf("bitch") >= 0)
+        na = name.replace(/bitch/ig, "coast");
+    if (n.indexOf("fuck") >= 0)
+        na = name.replace(/fuck/ig, "ahhh");
+    if (n.indexOf("shit") >= 0 || n.indexOf("crap") >= 0)
+        na = name.replace(/shit|crap/ig, "gold");
+    if (n.indexOf("damn") >= 0)
+        na = name.replace(/damn/ig, "wall");
+    if (n.indexOf("dick") >= 0)
+        na = name.replace(/dick/ig, "ohhh");
+    this.name = na;
 };
 
 PlayerTracker.prototype.getName = function() {
@@ -185,6 +201,13 @@ PlayerTracker.prototype.joinGame = function (name, skin) {
         // no scramble / lightweight scramble
         this.socket.sendPacket(new Packet.SetBorder(this, this.gameServer.border));
     }
+    if (this.gameServer.config.serverScrambleCoords == 3) {
+        // Scramble level 3 (no border)
+        // Unsupported on some clients! (include vanilla)
+        // ogar.mivabe.nl works ok
+        // Ruins most known minimaps
+        this.socket.sendPacket(new Packet.SetBorder(this, {minx:1/0,miny:1/0,maxx:1/0,maxy:1/0}));
+    }
     this.gameServer.gameMode.onPlayerSpawn(this.gameServer, this);
 };
 
@@ -261,7 +284,7 @@ PlayerTracker.prototype.update = function () {
         }
         if (newVisible[newIndex].nodeId > this.visibleNodes[oldIndex].nodeId) {
             var node = this.visibleNodes[oldIndex];
-            if (node.isRemoved)
+            if (node.isRemoved && node.getKiller() != null && node.owner != node.getKiller().owner)
                 eatNodes.push(node);
             else
                 delNodes.push(node);
@@ -282,9 +305,9 @@ PlayerTracker.prototype.update = function () {
     }
     for (; oldIndex < this.visibleNodes.length; ) {
         var node = this.visibleNodes[oldIndex];
-        if (node.isRemoved)
+        if (node.isRemoved && node.getKiller() != null && node.owner != node.getKiller().owner)
             eatNodes.push(node);
-        else 
+        else
             delNodes.push(node);
         oldIndex++;
     }
@@ -350,7 +373,7 @@ PlayerTracker.prototype.updateCenterFreeRoam = function () {
     var dx = this.mouse.x - this.centerPos.x;
     var dy = this.mouse.y - this.centerPos.y;
     var squared = dx * dx + dy * dy;
-    if (squared == 0) return;     // stop threshold
+    if (squared < 1) return;     // stop threshold
     
     // distance
     var d = Math.sqrt(squared);
@@ -364,11 +387,6 @@ PlayerTracker.prototype.updateCenterFreeRoam = function () {
     
     var x = this.centerPos.x + nx * speed;
     var y = this.centerPos.y + ny * speed;
-    // check border
-    x = Math.max(x, this.gameServer.border.minx);
-    y = Math.max(y, this.gameServer.border.miny);
-    x = Math.min(x, this.gameServer.border.maxx);
-    y = Math.min(y, this.gameServer.border.maxy);
     this.setCenterPos(x, y);
 };
 
@@ -397,14 +415,14 @@ PlayerTracker.prototype.getVisibleNodes = function () {
             // top player spectate
             this.setCenterPos(specPlayer.centerPos.x, specPlayer.centerPos.y);
             this.scale = specPlayer.getScale();
-            this.sendPosPacket();
+            this.sendCameraPacket();
             this.updateViewBox();
             return specPlayer.visibleNodes.slice(0);
         }
         // free roam spectate
         this.updateCenterFreeRoam();
         this.scale = this.gameServer.config.serverSpectatorScale;//0.25;
-        this.sendPosPacket();
+        this.sendCameraPacket();
     } else {
         // in game
         this.updateCenterInGame();
@@ -425,21 +443,18 @@ PlayerTracker.prototype.calcVisibleNodes = function() {
 };
 
 PlayerTracker.prototype.setCenterPos = function(x, y) {
+    if (isNaN(x) || isNaN(y)) {
+        throw new TypeError("PlayerTracker.setCenterPos: NaN");
+    }
+    x = Math.max(x, this.gameServer.border.minx);
+    y = Math.max(y, this.gameServer.border.miny);
+    x = Math.min(x, this.gameServer.border.maxx);
+    y = Math.min(y, this.gameServer.border.maxy);
     this.centerPos.x = x;
     this.centerPos.y = y;
-    if (this.freeRoam) this.checkBorderPass();
 };
 
-PlayerTracker.prototype.checkBorderPass = function() {
-    // A check while in free-roam mode to avoid player going into nothingness
-    this.centerPos.x = Math.max(this.centerPos.x, this.gameServer.border.minx);
-    this.centerPos.y = Math.max(this.centerPos.y, this.gameServer.border.miny);
-    this.centerPos.x = Math.min(this.centerPos.x, this.gameServer.border.maxx);
-    this.centerPos.y = Math.min(this.centerPos.y, this.gameServer.border.maxy);
-};
-
-PlayerTracker.prototype.sendPosPacket = function() {
-    // TODO: Send packet elsewhere so it is sent more often
+PlayerTracker.prototype.sendCameraPacket = function() {
     this.socket.sendPacket(new Packet.UpdatePosition(
         this,
         this.centerPos.x,
