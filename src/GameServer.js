@@ -88,9 +88,9 @@ function GameServer() {
         virusMinAmount: 10,         // Minimum number of viruses on the map.
         virusMaxAmount: 50,         // Maximum number of viruses on the map. If this number is reached, then ejected cells will pass through viruses.
         
-        ejectSize: 37,              // Size of ejected cells (vanilla 37)
+        ejectSize: 38,              // Size of ejected cells (vanilla 38)
         ejectCooldown: 3,           // min ticks between ejects
-        ejectSpawnPlayer: 50,       // Chance for a player to spawn from ejected mass
+        ejectSpawnPlayer: 1,        // if 1 then player may be spawned from ejected mass
         
         playerMinSize: 32,          // Minimym size of the player cell (mass = 32*32/100 = 10.24)
         playerMaxSize: 1500,        // Maximum size of the player cell (mass = 1500*1500/100 = 22500)
@@ -663,21 +663,21 @@ GameServer.prototype.spawnVirus = function () {
 };
 
 GameServer.prototype.spawnPlayer = function(player, pos, size) {
-    // Check if there are ejected mass in the world.
-    if (this.nodesEjected.length > 0) {
-        var index = Math.floor(Math.random() * 100) + 1;
-        if (index >= this.config.ejectSpawnPlayer) {
-            // Get ejected cell
-            index = Math.floor(Math.random() * this.nodesEjected.length);
-            var e = this.nodesEjected[index];
-            if (e.boostDistance == 0) {
-                // Remove ejected mass
-                this.removeNode(e);
-                // Inherit
+    // Check if can spawn from ejected mass
+    if (!pos && this.config.ejectSpawnPlayer && this.nodesEjected.length > 0) {
+        if (Math.random() >= 0.5) {
+            // Spawn from ejected mass
+            var index = (this.nodesEjected.length - 1) * Math.random() >>> 0;
+            var eject = this.nodesEjected[index];
+            if (!eject.isRemoved) {
+                this.removeNode(eject);
                 pos = {
-                    x: e.position.x,
-                    y: e.position.y
+                    x: eject.position.x,
+                    y: eject.position.y
                 };
+                if (!size) {
+                    size = Math.max(eject.getSize(), this.config.playerStartSize);
+                }
             }
         }
     }
@@ -1150,7 +1150,7 @@ GameServer.prototype.ejectMass = function(client, isFoolsVirus) {
         if (isFoolsVirus && cell.getMass() < 280) continue;
 
         var size2 = (isFoolsVirus ? 100 : this.config.ejectSize);
-        var sizeSquared = cell.getSquareSize() - size2 * size2;
+        var sizeSquared = cell.getSizeSquared() - size2 * size2;
         if (sizeSquared < this.config.playerMinSize * this.config.playerMinSize) {
             continue;
         }
@@ -1206,7 +1206,7 @@ GameServer.prototype.shootVirus = function(parent, angle) {
     };
 
     var newVirus = new Entity.Virus(this, null, parentPos, this.config.virusMinSize);
-    newVirus.setBoost(1500, angle);// 780
+    newVirus.setBoost(3200, angle);// 780, 1500
 
     // Add to moving cells list
     this.addNode(newVirus);

@@ -34,27 +34,34 @@ Map 6000x6000, 300 bots, 5000 food, 10 viruses - works pretty smooth with no lag
 ```
 npm install
 ```
-and then:
+and run the server:
 ```
-node src/index.js
+cd src
+node index.js
 ```
 
 #### Linux:
-* Install node.js:
 ```
+# First update your packages:
 sudo apt-get update
-sudo apt-get install nodejs
+
+# Install git:
+sudo apt-get install git
+
+# Install node.js:
+sudo apt-get install nodejs-legacy
 sudo apt-get install npm
-```
-* Download MultiOgar code: https://github.com/Barbosik/MultiOgar/archive/master.zip
-* Unzip MultiOgar code into some folder
-* Execute from MultiOgar folder:
-```
+
+# Clone MultiOgar:
+git clone git://github.com/Barbosik/MultiOgar.git
+
+# Install dependencies:
+cd MultiOgar
 npm install
-```
-and then:
-```
-node src/index.js
+
+# Run the server:
+cd src
+node index.js
 ```
 
 
@@ -97,10 +104,12 @@ vps.simonorj.com:24270 | USA | Instant Merge | https://redd.it/4mufge
 
 
 ## What's new:
+* Added spectate walk through feature (use Space key in spectate mode to lock the current player or to lock the next one. Use key Q to reset into the normal mode. Locked player is highlighted on leaderboard)
 * Fixed cell-split order, now split-run works ok
 * A little performance improvement for split/eject
 * Fixed min mass to split/eject
 * Fixed mass-limit behavior
+* Added chat player commands /skin and /kill (to change skin, just type /skin %shark in the chat)
 * Added scramble level 3 (anti-bot/anti-minimap protection), unsupported on some clients (unfortunately include vanilla, ogar.mivabe.nl works ok)
 * NOTE: there is major gameserver.ini change, previous version is incompatible!
 * Massive perfromance improvement & reduce network traffic
