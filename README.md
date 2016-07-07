@@ -1,6 +1,8 @@
 # MultiOgar
 Ogar game server with fast and smooth vanilla physics and multi-protocol support.
 
+Current version: **1.2.18**
+
 ## Project Info
 ![Language](https://img.shields.io/badge/language-node.js-yellow.svg)
 [![License](https://img.shields.io/badge/license-APACHE2-blue.svg)](https://github.com/Barbosik/OgarMulti/blob/master/LICENSE.md)
@@ -13,16 +15,21 @@ Original Ogar found [here](https://github.com/OgarProject/Ogar)
 
 The goal is to make good and smooth physics and cleanup the code.
 
+
 ## Screenshot
 
 MultiOgar console:
 
-![Screenshot](http://i.imgur.com/pmECJCH.png)
+![Screenshot](https://i.imgur.com/GiJURq0.png)
 
+Version 1.2.8: 
+* 1000 bots, 500 viruses, 1000 foods, map 14142x14142
+* Works very-very smooth (with a little slower speed, but it will not be noticed by user).
+* CPU load: 14% (x4 core)
+* Memory usage: 70 MB
 
-Map 6000x6000, 300 bots, 5000 food, 10 viruses - works pretty smooth with no lags:
+![Screenshot](http://i.imgur.com/XsXjT0o.png)
 
-![Screenshot](http://i.imgur.com/4Wg8s9b.png)
 
 ## Install
 
@@ -49,8 +56,7 @@ sudo apt-get update
 sudo apt-get install git
 
 # Install node.js:
-sudo apt-get install nodejs-legacy
-sudo apt-get install npm
+sudo apt-get install nodejs-legacy npm
 
 # Clone MultiOgar:
 git clone git://github.com/Barbosik/MultiOgar.git
@@ -61,7 +67,7 @@ npm install
 
 # Run the server:
 cd src
-node index.js
+sudo node index.js
 ```
 
 
@@ -74,28 +80,30 @@ This lists Ogar clients and server trackers that I found on internet.
 URL | Description
 --- | ---
 http://ogar.mivabe.nl/master | MivaBe, tracks a lot of servers
+http://c0nsume.me/tracker.php | c0nsume.me server tracker
 
 Now you can allow MultiOgar to be listed on a server tracker.
 Just set `serverTracker = 1` in the gameserver.ini, and your server will appear
-on this page: http://ogar.mivabe.nl/master
+on these pages: http://ogar.mivabe.nl/master , http://c0nsume.me/tracker.php
 If you don't want to include your server to tracker list, 
 just set `serverTracker = 0` and the server will not ping the server tracker.
 
 
 ###Ogar clients
-Just replace `127.0.0.1:50000` in the url to the server IP and port to play.
+Just replace `127.0.0.1:443` in the url to the server IP and port to play.
 
 URL | Protocol | Description
 --- | --- | ---
-http://agar.io/?ip=127.0.0.1:50000 | 8 | Vanilla
-http://ogar.mivabe.nl/?ip=127.0.0.1:50000 | early 5 | MivaBe, pretty smooth, custom graphics (anime)
-http://play.ogarul.tk/?ip=127.0.0.1:50000 | 4 | OgarUL, vanilla style (sends invalid protocol=1)
-http://c0nsume.me/private4.php?ip=127.0.0.1:50000 | 5 | vanilla style
+http://agar.io/?ip=127.0.0.1:443 | 8 | Vanilla
+http://ogar.mivabe.nl/?ip=127.0.0.1:443 | early 5 | MivaBe, pretty smooth, custom graphics (anime)
+http://play.ogarul.tk/?ip=127.0.0.1:443 | 4 | OgarUL, vanilla style (sends invalid protocol=1)
+http://c0nsume.me/private4.php?ip=127.0.0.1:443 | 5 | vanilla style
 
 ###MultiOgar Servers
 
 IP | Location | Game Mode | Web Site
 --- | --- | --- | ---
+146.185.167.9:443 | Netherlands | FFA | Test server (report issues here) http://agar.io/?ip=bubble-wars.tk:443
 vps.simonorj.com:24270 | USA | Instant Merge | https://redd.it/4mufge
 164.132.48.230:600 | France | FFA | http://c0nsume.me/private4.php?ip=164.132.48.230:600
 149.202.87.51:443 | Paris |	FFA	| http://agarlist.com/
@@ -104,6 +112,16 @@ vps.simonorj.com:24270 | USA | Instant Merge | https://redd.it/4mufge
 
 
 ## What's new:
+* Fixed mass decay
+* Added ejectSizeLoss
+* Added sub-net ban feature (use `ban xx.xx.xx.*` or `ban xx.xx.*.*` to ban entire sub-network)
+* Added performance optimizations, now up to 700 bots with no lags at all
+* Fixed bug when some cell split/eject were shown with delay for some clients
+* Added a lot of protocol optimizations, now server works with no lags at all even with 64 connected players
+* Added server version, now you can check if your MultiOgar code is fresh
+* Significant performance improvement and more smooth physics
+* Added protocol optimizations to reduce lags on cell multi split
+* Fixed pop-split behavior
 * Added spectate walk through feature (use Space key in spectate mode to lock the current player or to lock the next one. Use key Q to reset into the normal mode. Locked player is highlighted on leaderboard)
 * Fixed cell-split order, now split-run works ok
 * A little performance improvement for split/eject

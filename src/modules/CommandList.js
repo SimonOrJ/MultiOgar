@@ -105,6 +105,10 @@ Commands.list = {
             
             // Check for invalid decimal numbers of the IP address
             for (var i in ipParts) {
+                if (i > 1 && ipParts[i] == "*") {
+                    // mask for sub-net
+                    continue;
+                }
                 // If not numerical or if it's not between 0 and 255
                 // TODO: Catch string "e" as it means "10^".
                 if (isNaN(ipParts[i]) || ipParts[i] < 0 || ipParts[i] >= 256) {
@@ -159,27 +163,25 @@ Commands.list = {
         if (isNaN(toRemove)) {
             toRemove = -1; // Kick all bots if user doesnt specify a number
         }
-
-        var removed = 0;
-        var i = 0;
-        while (i < gameServer.clients.length && removed != toRemove) {
-            if (typeof gameServer.clients[i].remoteAddress == 'undefined') { // if client i is a bot kick him
-                var client = gameServer.clients[i].playerTracker;
-                var len = client.cells.length;
-                for (var j = 0; j < len; j++) {
-                    gameServer.removeNode(client.cells[0]);
-                }
-                client.socket.close();
-                removed++;
-            } else
-                i++;
+        if (toRemove < 1) {
+            Logger.warn("Invalid argument!");
+            return;
         }
-        if (toRemove == -1)
-            console.log("Kicked all bots (" + removed + ")");
+        var removed = 0;
+        for (var i = 0; i < gameServer.clients.length; i++) {
+            var socket = gameServer.clients[i];
+            if (socket.isConnected != null) continue;
+            socket.close();
+            removed++;
+            if (removed >= toRemove)
+                break;
+        }
+        if (removed == 0)
+            Logger.warn("Cannot find any bots");
         else if (toRemove == removed)
-            console.log("Kicked " + toRemove + " bots");
+            Logger.warn("Kicked " + removed + " bots");
         else
-            console.log("Only " + removed + " bots could be kicked");
+            Logger.warn("Only " + removed + " bots were kicked");
     },
     board: function(gameServer, split) {
         var newLB = [];
@@ -209,23 +211,30 @@ Commands.list = {
         gameServer.gameMode.updateLB = gm.updateLB;
         console.log("Successfully reset leaderboard");
     },
-    change: function(gameServer, split) {
+    change: function (gameServer, split) {
+        if (split.length < 3) {
+            Logger.warn("Invalid command arguments");
+            return;
+        }
         var key = split[1];
         var value = split[2];
-
+        
         // Check if int/float
         if (value.indexOf('.') != -1) {
             value = parseFloat(value);
         } else {
             value = parseInt(value);
         }
-
-        if (typeof gameServer.config[key] != 'undefined') {
-            gameServer.config[key] = value;
-            console.log("Set " + key + " to " + value);
-        } else {
-            console.log("Invalid config value");
+        if (value == null || isNaN(value)) {
+            Logger.warn("Invalid value: " + split[2]);
+            return;
         }
+        if (!gameServer.config.hasOwnProperty(key)) {
+            Logger.warn("Unknown config value: " + key);
+            return;
+        }
+        gameServer.config[key] = value;
+        console.log("Set " + key + " to " + value);
     },
     clear: function() {
         process.stdout.write("\u001b[2J\u001b[0;0H");
@@ -368,7 +377,7 @@ Commands.list = {
                     client.cells[j].setSize(size);
                 }
 
-                console.log("Set mass of " + client.name + " to " + (size*size/100).toFixed(3));
+                console.log("Set mass of " + client.getFriendlyName() + " to " + (size*size/100).toFixed(3));
                 break;
             }
         }
@@ -446,8 +455,8 @@ Commands.list = {
             var client = gameServer.clients[i].playerTracker;
 
             if (client.pID == id) {
-                console.log("Changing " + client.name + " to " + name);
-                client.name = name;
+                console.log("Changing " + client.getFriendlyName() + " to " + name);
+                client.setName(name);
                 return;
             }
         }
@@ -466,8 +475,10 @@ Commands.list = {
         Logger.info("Showing " + gameServer.clients.length + " players: ");
         console.log(" ID     | IP              | P | " + fillChar('NICK', ' ', gameServer.config.playerMaxNickLength) + " | CELLS | SCORE  | POSITION    "); // Fill space
         console.log(fillChar('', '-', ' ID     | IP              |   |  | CELLS | SCORE  | POSITION    '.length + gameServer.config.playerMaxNickLength));
-        for (var i = 0; i < gameServer.clients.length; i++) {
-            var socket = gameServer.clients[i];
+        var sockets = gameServer.clients.slice(0);
+        sockets.sort(function (a, b) { return a.playerTracker.pID - b.playerTracker.pID; });
+        for (var i = 0; i < sockets.length; i++) {
+            var socket = sockets[i];
             var client = socket.playerTracker;
 
             // ID with 3 digits length
@@ -499,12 +510,12 @@ Commands.list = {
             } else if (!socket.packetHandler.protocol && socket.isConnected) {
                 console.log(" " + id + " | " + ip + " | " + protocol + " | " + "[CONNECTING]");
             }else if (client.spectate) {
-                try {
-                    nick = gameServer.largestClient.getFriendlyName();
-                } catch (err) {
-                    Logger.error(err.stack);
-                    // Specating in free-roam mode
-                    nick = "in free-roam";
+                nick = "in free-roam";
+                if (!client.freeRoam) {
+                    var target = client.getSpectateTarget();
+                    if (target != null) {
+                        nick = target.getFriendlyName();
+                    }
                 }
                 data = fillChar("SPECTATING: " + nick, '-', ' | CELLS | SCORE  | POSITION    '.length + gameServer.config.playerMaxNickLength, true);
                 console.log(" " + id + " | " + ip + " | " + protocol + " | " + data);
@@ -576,7 +587,7 @@ Commands.list = {
                     gameServer.updateNodeQuad(client.cells[j]);
                 }
 
-                console.log("Teleported " + client.name + " to (" + pos.x + " , " + pos.y + ")");
+                console.log("Teleported " + client.getFriendlyName() + " to (" + pos.x + " , " + pos.y + ")");
                 break;
             }
         }

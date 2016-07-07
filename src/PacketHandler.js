@@ -1,10 +1,10 @@
+var pjson = require('../package.json');
 var Packet = require('./packet');
 var BinaryReader = require('./packet/BinaryReader');
 
 function PacketHandler(gameServer, socket) {
     this.gameServer = gameServer;
     this.socket = socket;
-    // Detect protocol version - we can do something about it later
     this.protocol = 0;
     this.isHandshakePassed = false;
     this.lastChatTick = 0;
@@ -12,26 +12,31 @@ function PacketHandler(gameServer, socket) {
     this.pressQ = false;
     this.pressW = false;
     this.pressSpace = false;
+    this.lastStatTime = +new Date;
 }
 
 module.exports = PacketHandler;
 
 PacketHandler.prototype.handleMessage = function(message) {
-    // Discard empty messages
-    if (message.length == 0)
+    // Validation
+    if (message.length == 0) {
         return;
-    if (message.length > 2048) {
+    }
+    if (message.length > 256) {
         // anti-spamming
         this.socket.close(1009, "Spam");
         return;
     }
-    var reader = new BinaryReader(message);
-    var packetId = reader.readUInt8();
     
     // no handshake?
     if (!this.isHandshakePassed) { 
-        if (packetId != 254 || message.length != 5)
-            return; // wait handshake
+        if (message[0] != 254 || message.length != 5) {
+            // wait handshake
+            return;
+        }
+        
+        var reader = new BinaryReader(message);
+        reader.skipBytes(1);
         
         // Handshake request
         this.protocol = reader.readUInt32();
@@ -41,8 +46,9 @@ PacketHandler.prototype.handleMessage = function(message) {
         }
         // Send handshake response
         this.socket.sendPacket(new Packet.ClearAll());
-        this.socket.sendPacket(new Packet.SetBorder(this.socket.playerTracker, this.gameServer.border, this.gameServer.config.serverGamemode, "MultiOgar"));
+        this.socket.sendPacket(new Packet.SetBorder(this.socket.playerTracker, this.gameServer.border, this.gameServer.config.serverGamemode, "MultiOgar " + pjson.version));
         // Send welcome message
+        this.gameServer.sendChatMessage(null, this.socket.playerTracker, "MultiOgar " + pjson.version);
         if (this.gameServer.config.serverWelcome1)
             this.gameServer.sendChatMessage(null, this.socket.playerTracker, this.gameServer.config.serverWelcome1);
         if (this.gameServer.config.serverWelcome2)
@@ -55,9 +61,15 @@ PacketHandler.prototype.handleMessage = function(message) {
         return;
     }
     this.socket.lastAliveTime = +new Date;
+    
+    var reader = new BinaryReader(message);
+    var packetId = reader.readUInt8();
 
     switch (packetId) {
         case 0:
+            if (this.socket.playerTracker.cells.length > 0) {
+                break;
+            }
             var text = null;
             if (this.protocol <= 5)
                 text = reader.readStringZeroUnicode();
@@ -74,7 +86,7 @@ PacketHandler.prototype.handleMessage = function(message) {
             }
             break;
         case 16:
-            // Set Target
+            // Mouse
             var client = this.socket.playerTracker;
             if (message.length == 13) {
                 // protocol late 5, 6, 7
@@ -128,11 +140,19 @@ PacketHandler.prototype.handleMessage = function(message) {
                 break;
             reader.skipBytes(rvLength);        // reserved
             var text = null;
-            if (this.protocol <= 5)
+            if (this.protocol < 6)
                 text = reader.readStringZeroUnicode();
             else
                 text = reader.readStringZeroUtf8();
             this.gameServer.onChatMessage(this.socket.playerTracker, null, text);
+            break;
+        case 254:
+            // Server stat
+            var time = +new Date;
+            var dt = time - this.lastStatTime;
+            this.lastStatTime = time;
+            if (dt < 1000) break;
+            this.socket.sendPacket(new Packet.ServerStat(this.socket.playerTracker));
             break;
         default:
             break;
