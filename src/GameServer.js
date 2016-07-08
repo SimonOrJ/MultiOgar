@@ -2,7 +2,8 @@
 var WebSocket = require('ws');
 var http = require('http');
 var fs = require("fs");
-var os = require("os");
+var os = require('os');
+var path = require('path');
 var pjson = require('../package.json');
 var ini = require('./modules/ini.js');
 var QuadNode = require('./QuadNode.js');
@@ -62,6 +63,7 @@ function GameServer() {
         serverMaxConnections: 64,   // Maximum number of connections to the server. (0 for no limit)
         serverIpLimit: 4,           // Maximum number of connections from the same IP (0 for no limit)
         serverPort: 443,            // Server port
+        serverBind: '0.0.0.0',      // Network interface binding
         serverTracker: 0,           // Set to 1 if you want to show your server on the tracker http://ogar.mivabe.nl/master
         serverGamemode: 0,          // Gamemode, 0 = FFA, 1 = Teams
         serverBots: 0,              // Number of player bots to spawn
@@ -95,7 +97,7 @@ function GameServer() {
         virusMaxAmount: 100,        // Maximum number of viruses on the map. If this number is reached, then ejected cells will pass through viruses.
         
         ejectSize: 38,              // Size of ejected cells (vanilla 38)
-        ejectSizeLoss: 1,           // Player cell size loss on each eject
+        ejectSizeLoss: 43,          // Eject size which will be substracted from player cell (vanilla 43?)
         ejectCooldown: 3,           // min ticks between ejects
         ejectSpawnPlayer: 1,        // if 1 then player may be spawned from ejected mass
         
@@ -142,11 +144,15 @@ GameServer.prototype.start = function() {
     // Gamemode configurations
     this.gameMode.onServerInit(this);
     
-    if (fs.existsSync('./ssl/key.pem') && fs.existsSync('./ssl/cert.pem')) {
+    var dirSsl = path.join(path.dirname(module.filename), '../ssl');
+    var pathKey = path.join(dirSsl, 'key.pem');
+    var pathCert = path.join(dirSsl, 'cert.pem');
+
+    if (fs.existsSync(pathKey) && fs.existsSync(pathCert)) {
         // HTTP/TLS
         var options = {
-            key: fs.readFileSync('./ssl/key.pem', 'utf8'),
-            cert: fs.readFileSync('./ssl/cert.pem', 'utf8')
+            key: fs.readFileSync(pathKey, 'utf8'),
+            cert: fs.readFileSync(pathCert, 'utf8')
         };
         Logger.info("TLS: supported");
         this.httpServer = HttpsServer.createServer(options);
@@ -162,7 +168,7 @@ GameServer.prototype.start = function() {
     this.wsServer = new WebSocket.Server(wsOptions);
     this.wsServer.on('error', this.onServerSocketError.bind(this));
     this.wsServer.on('connection', this.onClientSocketOpen.bind(this));
-    this.httpServer.listen(this.config.serverPort, this.onHttpServerOpen.bind(this));
+    this.httpServer.listen(this.config.serverPort, this.config.serverBind, this.onHttpServerOpen.bind(this));
 
     this.startStatsServer(this.config.serverStatsPort);
 };
@@ -1218,9 +1224,10 @@ GameServer.prototype.ejectMass = function(client, isFoolsVirus) {
             continue;
         }
 
-        var size1 = cell.getSize() - (isFoolsVirus ? 50 : this.config.ejectSizeLoss);
         var size2 = isFoolsVirus ? 100 : this.config.ejectSize;
-                var sizeSquared = size1 * size1 - size2 * size2;
+        var sizeLoss = isFoolsVirus ? 120 : this.config.ejectSizeLoss;
+        var sizeSquared = cell.getSizeSquared() - sizeLoss * sizeLoss;
+
         if (!isFoolsVirus && sizeSquared < this.config.playerMinSize * this.config.playerMinSize) {
             continue;
         }
