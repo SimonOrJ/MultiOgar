@@ -1199,11 +1199,13 @@ GameServer.prototype.ejectMass = function(client, isFoolsVirus) {
             continue;
         }
 
-        if (isFoolsVirus && cell.getMass() < 280) continue;
-
-        var size1 = cell.getSize() - (isFoolsVirus ? 140 : this.config.ejectSizeLoss);
+        var size1 = cell.getSize() - (isFoolsVirus ? 50 : this.config.ejectSizeLoss);
         var size2 = isFoolsVirus ? 100 : this.config.ejectSize;
-        if (sizeSquared < this.config.playerMinSize * this.config.playerMinSize) {
+                var sizeSquared = size1 * size1 - size2 * size2;
+        if (!isFoolsVirus && sizeSquared < this.config.playerMinSize * this.config.playerMinSize) {
+            continue;
+        }
+        else if (isFoolsVirus && sizeSquared < 14400) { // 120 * 120
             continue;
         }
         var size1 = Math.sqrt(sizeSquared);
