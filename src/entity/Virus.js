@@ -64,11 +64,11 @@ Virus.prototype.onEaten = function(consumer) {
     var angleDivisionConstant = 6.28/masses.length,
         angle = Math.random() * 6.28, // Random directions
         shape = Math.floor(Math.random() * 5),
-        maxSplitSpeed = Math.min(Math.pow(client.getScore()/100,0.2) * 650, 6200);
+        maxSplitSpeed = Math.min(Math.pow(client.getScore()/100,0.2) * 650, 6200),
         sAngle = 0;
     switch (shape) {
     case 0: // Circle
-        for (var k = masses.length-1; k >= 0; k--) {
+        for (var k = 0; k < masses.length; k++) {
             angle += angleDivisionConstant;
             if (!this.gameServer.splitPlayerCell(client, consumer, angle, masses[k], maxSplitSpeed))
                 break;
