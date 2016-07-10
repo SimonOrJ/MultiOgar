@@ -4,7 +4,7 @@ function FFA() {
     Mode.apply(this, Array.prototype.slice.call(arguments));
 
     this.ID = 0;
-    this.name = "Instant Merge FFA";
+    this.name = "Modded Instant Merge";
     this.specByLeaderboard = true;
 }
 
