@@ -14,9 +14,12 @@ PlayerCell.prototype = new Cell();
 
 PlayerCell.prototype.updateRemerge = function () {
     var age = this.getAge(this.gameServer.getTick());
-    // 20: full cell split; 13: cell split delay.
-    if (age > 20 || (age > 13 && this.getMass() < 1000))
-        this._canRemerge = true;
+    if (age < 15) {
+        // do not remerge if cell age is smaller than 15 ticks
+        this._canRemerge = false;
+        return;
+    }
+    this._canRemerge = age > 20 || this.getSize() < 315;
 }
 
 PlayerCell.prototype.canRemerge = function () {
