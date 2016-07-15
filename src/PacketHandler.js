@@ -181,9 +181,28 @@ PacketHandler.prototype.setNickname = function (text) {
     if (name.length > this.gameServer.config.playerMaxNickLength) {
         name = name.substring(0, this.gameServer.config.playerMaxNickLength);
     }
-    if (this.gameServer.checkBadWord(name)) {
-        skin = null;
-        name = "Hi there!";
+    var n = name.toLowerCase();
+    if (n.indexOf("team") >= 0 && n.indexOf("no") < 0 && n.indexOf("n't") < 0 && n.indexOf("stop") < 0 && n.indexOf("hate") < 0) {
+        name = "I HATE TEAMING";
+    }
+    else {
+        if (this.gameServer.checkBadWord(name)) {
+            skin = null;
+            // Start of name code
+            if (n.indexOf("bitch") >= 0)
+                name = name.replace(/bitch/ig, "coast");
+            if (n.indexOf("fuck") >= 0)
+                name = name.replace(/fuck/ig, "ahhh");
+            if (n.indexOf("shit") >= 0 || n.indexOf("crap") >= 0)
+                name = name.replace(/shit|crap/ig, "gold");
+            if (n.indexOf("damn") >= 0)
+                name = name.replace(/damn/ig, "wall");
+            if (n.indexOf("dick") >= 0)
+                name = name.replace(/dick/ig, "ohhh");
+            if (this.gameServer.checkBadWord(name))
+            // End of added code.
+                name = "Hi there!";
+        }
     }
     this.socket.playerTracker.joinGame(name, skin);
 };

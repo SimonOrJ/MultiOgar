@@ -109,24 +109,6 @@ PlayerTracker.prototype.getFriendlyName = function () {
 };
 
 PlayerTracker.prototype.setName = function(name) {
-    // Start of name code
-    var n = name.toLowerCase();
-    if (n.indexOf("team") >= 0 && n.indexOf("no") < 0 && n.indexOf("n't") < 0 && n.indexOf("stop") < 0 && n.indexOf("hate") < 0) {
-        name = "I HATE TEAMING";
-    }
-    else {
-    if (n.indexOf("bitch") >= 0)
-        name = name.replace(/bitch/ig, "coast");
-    if (n.indexOf("fuck") >= 0)
-        name = name.replace(/fuck/ig, "ahhh");
-    if (n.indexOf("shit") >= 0 || n.indexOf("crap") >= 0)
-        name = name.replace(/shit|crap/ig, "gold");
-    if (n.indexOf("damn") >= 0)
-        name = name.replace(/damn/ig, "wall");
-    if (n.indexOf("dick") >= 0)
-        name = name.replace(/dick/ig, "ohhh");
-    }
-    // End of added code.  Next line is commented.
     this._name = name;
     if (!name || name.length < 1) {
         this._nameUnicode = null;
