@@ -1,7 +1,7 @@
 ﻿# MultiOgar
 Ogar game server with fast and smooth vanilla physics and multi-protocol support.
 
-Current version: **1.2.50**
+Current version: **1.2.53**
 
 ## Project Info
 ![Language](https://img.shields.io/badge/language-node.js-yellow.svg)
@@ -77,8 +77,11 @@ This lists Ogar clients and server trackers that I found on internet.
 
 ###Ogar server trackers
 
+Welcome to http://ogar-tracker.tk :)
+
 URL | Description
 --- | ---
+http://ogar-tracker.tk | Ogar tracker
 http://ogar.mivabe.nl/master | MivaBe, tracks a lot of servers
 http://c0nsume.me/tracker.php | c0nsume.me server tracker
 
