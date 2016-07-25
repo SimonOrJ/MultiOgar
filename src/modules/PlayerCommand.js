@@ -3,6 +3,10 @@ var Logger = require('./Logger');
 var UserRoleEnum = require("../enum/UserRoleEnum");
 
 
+var ErrorTextInvalidCommand = "ERROR: Unknown command, type /help for command list";
+var ErrorTextBadCommand = "ERROR: Bad command!";
+
+
 function PlayerCommand(gameServer, playerTracker) {
     this.gameServer = gameServer;
     this.playerTracker = playerTracker;
@@ -21,14 +25,29 @@ PlayerCommand.prototype.executeCommandLine = function (commandLine) {
     var index = commandLine.indexOf(' ');
     if (index >= 0) {
         command = commandLine.slice(0, index);
-        args = commandLine.slice(index+1, commandLine.length);
+        args = commandLine.slice(index + 1, commandLine.length);
     }
     command = command.trim().toLowerCase();
+    if (command.length > 16) {
+        this.writeLine(ErrorTextInvalidCommand);
+        return;
+    }
+    for (var i = 0; i < command.length; i++) {
+        var c = command.charCodeAt(i);
+        if (c < 0x21 || c > 0x7F) {
+            this.writeLine(ErrorTextInvalidCommand);
+            return;
+        }
+    }
+    if (!playerCommands.hasOwnProperty(command)) {
+        this.writeLine(ErrorTextInvalidCommand);
+        return;
+    }
     var execute = playerCommands[command];
     if (typeof execute == 'function') {
         execute.bind(this)(args);
     } else {
-        this.writeLine("Unknown command, type /help for command list");
+        this.writeLine(ErrorTextBadCommand);
     }
 };
 
@@ -40,13 +59,15 @@ var playerCommands = {
     },
     skin: function (args) {
         if (this.playerTracker.cells.length > 0) {
-            this.writeLine("Cannot change skin while player in game!");
+            this.writeLine("ERROR: Cannot change skin while player in game!");
             return;
         }
         var skinName = "";
         if (args) skinName = args.trim();
-        if (skinName.length > 16)
-            skinName = skinName.slice(0, 16);
+        if (!this.gameServer.checkSkinName(skinName)) {
+            this.writeLine("ERROR: Invalid skin name!");
+            return;
+        }
         this.playerTracker.setSkin(skinName);
         if (skinName == "")
             this.writeLine("Your skin was removed");

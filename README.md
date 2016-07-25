@@ -1,7 +1,7 @@
-# MultiOgar
+﻿# MultiOgar
 Ogar game server with fast and smooth vanilla physics and multi-protocol support.
 
-Current version: **1.2.42**
+Current version: **1.2.50**
 
 ## Project Info
 ![Language](https://img.shields.io/badge/language-node.js-yellow.svg)
@@ -113,6 +113,7 @@ vps.simonorj.com:24270 | Montreal | Instant Merge | https://redd.it/4mufge
 
 
 ## What's new:
+* 1.2.47: Improved stability and performance; added mute/unmute command
 * Added support for secure websocket connections (TLS)
 * Fixed mass decay
 * Added ejectSizeLoss

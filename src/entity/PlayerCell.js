@@ -1,4 +1,4 @@
-var Cell = require('./Cell');
+﻿var Cell = require('./Cell');
 
 function PlayerCell() {
     Cell.apply(this, Array.prototype.slice.call(arguments));
@@ -73,12 +73,12 @@ PlayerCell.prototype.moveUser = function (border) {
 
 // Override
 
-PlayerCell.prototype.onAdd = function(gameServer) {
+PlayerCell.prototype.onAdd = function (gameServer) {
     // Gamemode actions
     gameServer.gameMode.onCellAdd(this);
 };
 
-PlayerCell.prototype.onRemove = function(gameServer) {
+PlayerCell.prototype.onRemove = function (gameServer) {
     var index;
     // Remove from player cell list
     index = this.owner.cells.indexOf(this);
