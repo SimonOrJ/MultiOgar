@@ -291,6 +291,7 @@ GameServer.prototype.onClientSocketOpen = function (ws) {
 };
 
 GameServer.prototype.onClientSocketClose = function (ws, code) {
+    ws._socket.destroy();
     if (this.socketCount < 1) {
         Logger.error("GameServer.onClientSocketClose: socketCount=" + this.socketCount);
     } else {
@@ -1881,6 +1882,10 @@ function trackerRequest(options, type, body) {
     });
     req.on('error', function (err) {
         Logger.writeError("[Tracker][" + options.host + "]: " + err);
+    });
+    req.shouldKeepAlive = false;
+    req.on('close', function () {
+        req.destroy();
     });
     req.write(body);
     req.end()
