@@ -1,7 +1,7 @@
 ﻿# MultiOgar
 Ogar game server with fast and smooth vanilla physics and multi-protocol support.
 
-Current version: **1.2.59**
+Current version: **1.2.60**
 
 ## Project Info
 ![Language](https://img.shields.io/badge/language-node.js-yellow.svg)
@@ -14,6 +14,16 @@ Original Ogar found [here](https://github.com/OgarProject/Ogar)
 
 
 The goal is to make good and smooth physics and cleanup the code.
+
+## Ogar Server Tracker
+
+You can found active Ogar servers on http://ogar-tracker.tk 
+It updates server information in realtime with no need to refresh the page.
+
+If you want to include your server in the list. Just install the latest version of MultiOgar server and enable server tracking with `serverTracker = 1` in gameserver.ini
+
+If you have other server and want to include it in the list, just insert the code to ping ogar-tracker.tk into your server.
+You can found example in MultiOgar source code: https://github.com/Barbosik/MultiOgar/blob/master/src/GameServer.js#L1799-L1823
 
 
 ## Screenshot
