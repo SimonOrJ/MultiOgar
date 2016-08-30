@@ -5,6 +5,8 @@ function PlayerCell() {
     
     this.cellType = 0;
     this._canRemerge = false;
+
+    this.notSplitByVirus = true;
 }
 
 module.exports = PlayerCell;
@@ -27,6 +29,11 @@ PlayerCell.prototype.canRemerge = function () {
 };
 
 PlayerCell.prototype.canEat = function (cell) {
+    // If split by virus and is boosting
+    if (!this.notSplitByVirus && this.boostDistance) {
+        // Eat all but (other) players
+        return cell.cellType !== 0;
+    }
     // player cell can eat anyone
     return true;
 };

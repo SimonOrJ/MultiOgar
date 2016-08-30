@@ -1349,7 +1349,7 @@ GameServer.prototype.ejectMass = function (client, isFoolsVirus) {
         var ejected = new Entity.EjectedMass(this, null, pos, size2);
         ejected.ejector = cell;
         if (isFoolsVirus) {
-            ejected.setColor({r:0,g:255,b:0});
+            ejected.setColor({r:0x33,g:0xff,b:0x33});
             ejected.setBoost(1200, angle);
         } else {
             ejected.setColor(cell.getColor());

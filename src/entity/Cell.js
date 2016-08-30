@@ -20,8 +20,6 @@
     this.boostMaxSpeed = 78;    // boost speed limit, sqrt(780*780/100)
     this.ejector = null;
     
-    this.notSplitByVirus = true;
-
     if (this.gameServer != null) {
         this.nodeId = this.gameServer.getNextNodeId();
         this.tickOfBirth = this.gameServer.getTick();
