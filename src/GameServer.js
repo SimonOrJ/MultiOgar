@@ -1,5 +1,4 @@
 ﻿// Library imports
-var WebSocket = require('ws');
 var http = require('http');
 var fs = require("fs");
 var os = require('os');
@@ -64,6 +63,7 @@ function GameServer() {
         logFileVerbosity: 5,        // File log level
         
         serverTimeout: 300,         // Seconds to keep connection alive for non-responding client
+        serverWsModule: 'ws',       // WebSocket module: 'ws' or 'uws' (install npm package before using uws)
         serverMaxConnections: 64,   // Maximum number of connections to the server. (0 for no limit)
         serverIpLimit: 4,           // Maximum number of connections from the same IP (0 for no limit)
         serverMinionIgnoreTime: 30, // minion detection disable time on server startup [seconds]
@@ -83,7 +83,7 @@ function GameServer() {
         serverScrambleLevel: 2,     // Toggles scrambling of coordinates. 0 = No scrambling, 1 = lightweight scrambling. 2 = full scrambling (also known as scramble minimap); 3 - high scrambling (no border)
         serverMaxLB: 10,            // Controls the maximum players displayed on the leaderboard.
         serverChat: 1,              // Set to 1 to allow chat; 0 to disable chat.
-        serverChatAscii: 1,          // Set to 1 to disable non-ANSI letters in the chat (english only mode)
+        serverChatAscii: 1,         // Set to 1 to disable non-ANSI letters in the chat (english only mode)
         
         serverName: 'MultiOgar #1', // Server name
         serverWelcome1: 'Welcome to MultiOgar server!',      // First server welcome message
@@ -179,6 +179,25 @@ GameServer.prototype.start = function () {
         perMessageDeflate: false,
         maxPayload: 4096
     };
+    Logger.info("WebSocket: " + this.config.serverWsModule);
+    WebSocket = require(this.config.serverWsModule);
+    // Custom prototype functions^M
+    WebSocket.prototype.sendPacket = function (packet) {
+        if (packet == null) return;
+        if (this.readyState == WebSocket.OPEN) {
+            if (this._socket.writable != null && !this._socket.writable) {
+                return;
+            }
+            var buffer = packet.build(this.playerTracker.socket.packetHandler.protocol);
+            if (buffer != null) {
+                this.send(buffer, { binary: true });
+            }
+        } else {
+            this.readyState = WebSocket.CLOSED;
+            this.emit('close');
+        }
+    };
+    
     this.wsServer = new WebSocket.Server(wsOptions);
     this.wsServer.on('error', this.onServerSocketError.bind(this));
     this.wsServer.on('connection', this.onClientSocketOpen.bind(this));
@@ -293,7 +312,9 @@ GameServer.prototype.onClientSocketOpen = function (ws) {
 };
 
 GameServer.prototype.onClientSocketClose = function (ws, code) {
-    ws._socket.destroy();
+    if (ws._socket.destroy != null && typeof ws._socket.destroy == 'function') {
+        ws._socket.destroy();
+    }
     if (this.socketCount < 1) {
         Logger.error("GameServer.onClientSocketClose: socketCount=" + this.socketCount);
     } else {
@@ -422,43 +443,39 @@ GameServer.prototype.getRandomColor = function () {
 };
 
 GameServer.prototype.updateNodeQuad = function (node) {
-    var quadItem = node.quadItem;
-    if (quadItem == null) {
+    var item = node.quadItem;
+    if (item == null) {
         throw new TypeError("GameServer.updateNodeQuad: quadItem is null!");
     }
+    var x = node.position.x;
+    var y = node.position.y;
+    var size = node.getSize();
     // check for change
-    if (node.position.x == quadItem.x &&
-        node.position.y == quadItem.y &&
-        node.getSize() == quadItem.size) {
-        // no change
+    if (item.x === x && item.y === y && item.size === size) {
         return;
     }
-    // update quadTree
-    quadItem.x = node.position.x;
-    quadItem.y = node.position.y;
-    quadItem.size = node.getSize();
-    quadItem.bound = {
-        minx: node.quadItem.x - node.quadItem.size,
-        miny: node.quadItem.y - node.quadItem.size,
-        maxx: node.quadItem.x + node.quadItem.size,
-        maxy: node.quadItem.y + node.quadItem.size
-    };
-    this.quadTree.update(quadItem);
+    // update quad tree
+    item.x = x;
+    item.y = y;
+    item.size = size;
+    item.bound.minx = x - size;
+    item.bound.miny = y - size;
+    item.bound.maxx = x + size;
+    item.bound.maxy = y + size;
+    this.quadTree.update(item);
 };
 
 
 GameServer.prototype.addNode = function (node) {
+    var x = node.position.x;
+    var y = node.position.y;
+    var size = node.getSize();
     node.quadItem = {
         cell: node,
-        x: node.position.x,
-        y: node.position.y,
-        size: node.getSize()
-    };
-    node.quadItem.bound = {
-        minx: node.quadItem.x - node.quadItem.size,
-        miny: node.quadItem.y - node.quadItem.size,
-        maxx: node.quadItem.x + node.quadItem.size,
-        maxy: node.quadItem.y + node.quadItem.size
+        x: x,
+        y: y,
+        size: size,
+        bound: { minx: x-size, miny: y-size, maxx: x+size, maxy: y+size }
     };
     this.quadTree.insert(node.quadItem);
     
@@ -813,8 +830,8 @@ GameServer.prototype.resolveRigidCollision = function (manifold, border) {
     var invd = 1 / d;
     
     // normal
-    var nx = manifold.dx * invd;
-    var ny = manifold.dy * invd;
+    var nx = ~~manifold.dx * invd;
+    var ny = ~~manifold.dy * invd;
     
     // body penetration distance
     var penetration = manifold.r - d;
@@ -1216,8 +1233,8 @@ GameServer.prototype.splitCells = function (client) {
     var splitCells = 0; // How many cells have been split
     for (var i = 0; i < cellToSplit.length; i++) {
         var cell = cellToSplit[i];
-        var dx = client.mouse.x - cell.position.x;
-        var dy = client.mouse.y - cell.position.y;
+        var dx = ~~(client.mouse.x - cell.position.x);
+        var dy = ~~(client.mouse.y - cell.position.y);
         var dl = dx * dx + dy * dy;
         if (dl < 1) {
             dx = 1;
@@ -1770,23 +1787,6 @@ GameServer.prototype.getStats = function () {
         'start_time': this.startTime
     };
     this.stats = JSON.stringify(s);
-};
-
-// Custom prototype functions
-WebSocket.prototype.sendPacket = function (packet) {
-    if (packet == null) return;
-    if (this.readyState == WebSocket.OPEN) {
-        if (!this._socket.writable) {
-            return;
-        }
-        var buffer = packet.build(this.playerTracker.socket.packetHandler.protocol);
-        if (buffer != null) {
-            this.send(buffer, { binary: true });
-        }
-    } else {
-        this.readyState = WebSocket.CLOSED;
-        this.emit('close');
-    }
 };
 
 // Ping the server tracker.
