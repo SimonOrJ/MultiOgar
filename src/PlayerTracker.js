@@ -470,8 +470,6 @@ PlayerTracker.prototype.pressQ = function () {
     if (this.spectate) {
         // Check for spam first (to prevent too many add/del updates)
         var tick = this.gameServer.getTick();
-        if (tick - this.lastSpectateSwitchTick < 40)
-            return;
         this.lastSpectateSwitchTick = tick;
         
         if (this.spectateTarget == null) {
@@ -497,8 +495,6 @@ PlayerTracker.prototype.pressSpace = function () {
     if (this.spectate) {
         // Check for spam first (to prevent too many add/del updates)
         var tick = this.gameServer.getTick();
-        if (tick - this.lastSpectateSwitchTick < 40)
-            return;
         this.lastSpectateSwitchTick = tick;
         
         // Space doesn't work for freeRoam mode
