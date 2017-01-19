@@ -1,4 +1,13 @@
-﻿# MultiOgar
+# SimonOrJ's MultiOgar Instant Merge Mod
+This is the mod made for my instant merge server.  I've kept track of all the changes I made, and I've kept the code updated with Barbosik's MultiOgar code.
+
+It's been a wild ride, and now, Miniclip has made another protocol update.  For some reason, the new protocol update made some annoying change that prevents it from spawning into the server.  The new leaderboard is a nice touch, and the quest is pretty cool.  However, the private server went buggy.
+
+If anyone wants to see what changes I made to the source code last year (in 2016), here it is.  I hope someone finds this useful.
+
+Below is the original `README.md file`.
+
+# MultiOgar
 Ogar game server with fast and smooth vanilla physics and multi-protocol support.
 
 Current version: **1.2.69**
