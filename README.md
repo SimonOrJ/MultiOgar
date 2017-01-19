@@ -1,6 +1,10 @@
 # SimonOrJ's MultiOgar Instant Merge Mod
 This is the mod made for my instant merge server.  I've kept track of all the changes I made, and I've kept the code updated with Barbosik's MultiOgar code.
 
+* Server IP Address: vps.simonorj.com:24270
+  * [Link through official client](http://agar.io/?ip=vps.simonorj.com:24270)
+* [Reddit Post Link](https://redd.it/4mufge)
+
 It's been a wild ride, and now, Miniclip has made another protocol update.  For some reason, the new protocol update made some annoying change that prevents it from spawning into the server.  The new leaderboard is a nice touch, and the quest is pretty cool.  However, the private server went buggy.
 
 If anyone wants to see what changes I made to the source code last year (in 2016), here it is.  I hope someone finds this useful.
