@@ -1,6 +1,7 @@
 # SimonOrJ's MultiOgar Instant Merge Mod
 This is the mod made for my instant merge server.  I've kept track of all the changes I made, and I've kept the code updated with Barbosik's MultiOgar code.
 
+* [Changes made from the original MultiOgar code](https://github.com/Barbosik/MultiOgar/compare/master...SimonOrJ:master#files_bucket)
 * Server IP Address: vps.simonorj.com:24270
   * [Link through official client](http://agar.io/?ip=vps.simonorj.com:24270)
 * [Reddit Post Link](https://redd.it/4mufge)
